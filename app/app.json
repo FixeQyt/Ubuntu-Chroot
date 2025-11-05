@@ -1,0 +1,30 @@
+{
+	"expo": {
+		"name": "ubuntu-chroot-app",
+		"slug": "ubuntu-chroot-app",
+		"version": "1.0.0",
+		"web": {
+			"favicon": "./assets/favicon.png"
+		},
+		"experiments": {
+			"tsconfigPaths": true
+		},
+		"plugins": [],
+		"orientation": "portrait",
+		"icon": "./assets/icon.png",
+		"userInterfaceStyle": "dark",
+		"splash": {
+			"image": "./assets/splash.png",
+			"resizeMode": "contain",
+			"backgroundColor": "#000000"
+		},
+		"assetBundlePatterns": ["**/*"],
+		"android": {
+			"adaptiveIcon": {
+				"foregroundImage": "./assets/adaptive-icon.png",
+				"backgroundColor": "#000000"
+			},
+			"package": "com.ubuntuchrootapp"
+		}
+	}
+}
