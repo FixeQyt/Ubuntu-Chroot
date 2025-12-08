@@ -21,6 +21,7 @@ A comprehensive Android Linux environment featuring **Ubuntu 24.04** with a buil
 - [Access the GUI](#gui)
 - [Experimental Features](#experimental-features)
 - [Kernel Requirements (Optional)](#kernel-requirements)
+- [Running Docker inside Chroot](#docker)
 - [To-Do](#to-do)
 - [Known issues](#known-issues)
 - [Credits](#credits)
@@ -476,6 +477,85 @@ CONFIG_SYSVIPC_SYSCTL=y
 ```
 
 </details>
+
+<a id="docker"></a>
+## 🐳 Running Docker inside Chroot
+
+> [!TIP]
+> **Docker is already installed and configured by default,** so you don't need to do anything to install it.
+
+**The quick way to verify if you can run Docker containers is to check if the "Devices Cgroups" are mounted.**
+
+- If you see these logs in the console, then your device has minimal Docker support:
+
+  ```
+  [INFO] Setting up minimal cgroups for Docker...
+  [INFO] Cgroup devices mounted successfully.
+  ```
+
+- Otherwise, there's no way to run Docker inside the phone unless you compile a custom kernel.
+
+**Next,** verify if your `/data` partition is `ext4`.
+
+- **If it is f2fs,** you **MUST** use the migrate feature from "Options -> Experimental Features -> Migrate to Sparse Image" so Docker can properly wire up OverlayFS on top of the ext4 mounted rootfs.
+
+**After verifying your kernel supports Devices Cgroups and resolving any `ext4` filesystem issues, you need to start the Docker daemon using the command below.**
+
+- Run this inside the chroot terminal: `sudo dockerd`
+
+- If the Docker daemon started successfully, it should show something like this:
+
+  ```
+  INFO[2025-12-08T16:59:04.981797971Z] Completed buildkit initialization
+  INFO[2025-12-08T16:59:05.016738894Z] Daemon has completed initialization
+  INFO[2025-12-08T16:59:05.017061663Z] API listen on /var/run/docker.sock
+  ```
+- If it failed, that means your kernel does not support running Docker even though the "Devices Cgroups" are available.
+- In that case, you need to compile a custom kernel with all the required Docker configurations enabled.
+
+**To verify Docker is fully functional,** you can run this command in a new terminal: `docker run -it hello-world`
+
+**To run the Docker daemon whenever the chroot starts, you can modify the "Post-exec Script" from the WebUI by going into the "Options" menu.**
+
+- To enable it, remove the comment from the beginning of the `dockerd > /dev/null 2>&1 &` line, like this:
+
+  <details>
+  <summary></summary>
+
+    <p align="center">
+      <img src="Screenshots/dockerd.jpg" alt="Docker Daemon" width="650" />
+      <br><em>Uncomment dockerd in post-exec</em>
+    </p>
+
+  </details>
+
+> [!NOTE]
+> **Networking inside Docker**
+>
+> **For maximum compatibility,** we ship the pre-built rootfs with Docker networking features disabled and **force configured** to use **NAT** instead of creating Docker's own `docker0` network interface.
+>
+> You can modify this behavior by editing `/etc/docker/daemon.json` if needed.
+>
+> **Additionally,** every action you run with the `docker run` command will automatically use `docker run --net=host` via the `docker` function in [this script](./Docker/scripts/bashrc.sh), which tells Docker to use the host network for all networking tasks, including internet access.
+
+> [!IMPORTANT]
+>
+> **Even if you have a custom kernel with all the necessary configurations enabled,** Docker still won't be able to create the `docker0` interface without flushing the existing iptables filter chains.
+>
+> **To do this,** first, you need to use `iptables-legacy` and `ip6tables-legacy`.
+>
+> Run these commands inside Ubuntu:
+> ```
+> update-alternatives --set iptables /usr/sbin/iptables-legacy
+> update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+>```
+> **Then,** run these commands to fix the Docker iptables issue:
+> ```
+> iptables -t filter -F
+> ip6tables -t filter -F
+>```
+>
+> **Now,** you can edit `/etc/docker/daemon.json` to use iptables and run `dockerd` to see if it works. Keep in mind this will only work if your kernel has the necessary kernel configurations enabled.
 
 <a id="credits"></a>
 ## 🙏 Credits
