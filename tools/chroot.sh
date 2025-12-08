@@ -579,6 +579,15 @@ start_chroot() {
     [ -d "/dev/binderfs" ] && advanced_mount "/dev/binderfs" "$CHROOT_PATH/dev/binderfs" "bind"
     [ -d "/dev/bus/usb" ] && advanced_mount "/dev/bus/usb" "$CHROOT_PATH/dev/bus/usb" "bind"
 
+    # Mirror /proc/self/fd to /dev/fd using symlink
+    # Order: unmount if mounted, remove if exists, then create symlink
+    run_in_chroot "umount /dev/fd 2>/dev/null || true; rm -rf /dev/fd 2>/dev/null; ln -sf /proc/self/fd /dev" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        log "Created symlink /dev/fd -> /proc/self/fd"
+    else
+        warn "Failed to create symlink /dev/fd -> /proc/self/fd"
+    fi
+
     log "Setting up minimal cgroups for Docker..."
     run_in_ns mkdir -p "$CHROOT_PATH/sys/fs/cgroup"
     if run_in_ns mount -t tmpfs -o mode=755 tmpfs "$CHROOT_PATH/sys/fs/cgroup" 2>/dev/null; then
