@@ -266,6 +266,10 @@ watch(androidOptimize, (val) => {
   writeDozeOffFile();
 });
 
+watch(runAtBoot, (val) => {
+  writeBootFile(val);
+});
+
 onMounted(async () => {
   // Check if ROOTFS_DIR exists
   const check = await cmd.runCommandSync(`ls -ld ${ROOTFS_DIR} 2>&1`);
