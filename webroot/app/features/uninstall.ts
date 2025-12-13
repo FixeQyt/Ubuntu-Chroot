@@ -61,190 +61,170 @@ export function init(d: UninstallDeps) {
   deps = d;
 }
 
-/**
- * Uninstall the chroot environment.
- *
- * This follows the same safe/guarded approach as the legacy UI:
- *  - Ask for confirmation
- *  - Close settings UI
- *  - Show progress header + indicator
- *  - Stop chroot (if running)
- *  - Execute the uninstall command
- *  - Handle success/error
- */
 export async function uninstallChroot() {
-  if (!deps) return;
-  const d = deps;
+  try {
+    if (!deps) return;
+    const d = deps;
 
-  // Guard: don't run if a command is already active
-  if (d.activeCommandId && d.activeCommandId.value) {
-    d.appendConsole(
-      "⚠ Another command is already running. Please wait...",
-      "warn",
-    );
-    return;
-  }
+    // Guard: don't run if a command is already active
+    if (d.activeCommandId && d.activeCommandId.value) {
+      d.appendConsole(
+        "⚠ Another command is already running. Please wait...",
+        "warn",
+      );
+      return;
+    }
 
-  // Ask for confirmation
-  const confirmFn = d.showConfirmDialog;
-  let confirmed = true;
-  if (confirmFn) {
-    confirmed = await confirmFn(
-      "Uninstall Chroot Environment",
+    // Ask for confirmation
+    alert(
       "Are you sure you want to uninstall the chroot environment?\n\nThis will permanently delete all data in the chroot and cannot be undone.",
-      "Uninstall",
-      "Cancel",
     );
-  } else {
-    // If no UI available, fallback to a prompt that returns boolean
-    // (This is an edge case; typically confirmFn should be provided)
-    const ok =
-      typeof window !== "undefined"
-        ? window.confirm("Are you sure to uninstall the chroot environment?")
-        : false;
-    confirmed = !!ok;
-  }
+    const confirmed = true;
 
-  if (!confirmed) {
-    return;
-  }
+    d.closeSettingsPopup?.();
+    await new Promise((r) =>
+      setTimeout(r, d.ANIMATION_DELAYS?.INPUT_FOCUS ?? 120),
+    );
+    d.updateStatus?.("uninstalling");
+    await new Promise((r) =>
+      setTimeout(r, d.ANIMATION_DELAYS?.POPUP_CLOSE_VERY_LONG ?? 750),
+    );
 
-  // Give a short time for UI feedback & close dialogs
-  d.closeSettingsPopup?.();
-  await new Promise((r) =>
-    setTimeout(r, d.ANIMATION_DELAYS?.INPUT_FOCUS ?? 120),
-  );
-  // Update status immediately (visual feedback)
-  d.updateStatus?.("uninstalling");
-  await new Promise((r) =>
-    setTimeout(r, d.ANIMATION_DELAYS?.POPUP_CLOSE_VERY_LONG ?? 750),
-  );
+    // Disable UI while uninstalling
+    d.disableAllActions?.(true);
+    d.disableSettingsPopup?.(true);
 
-  // Disable UI while uninstalling
-  d.disableAllActions?.(true);
-  d.disableSettingsPopup?.(true);
-
-  // Stop chroot if it's running, using the provided helper
-  if (d.ensureChrootStopped) {
-    try {
-      const stopped = await d.ensureChrootStopped();
-      if (!stopped) {
-        d.appendConsole("✗ Failed to stop chroot - uninstall aborted", "err");
-        if (d.activeCommandId) d.activeCommandId.value = null;
+    // Stop chroot if it's running, using the provided helper
+    if (d.ensureChrootStopped) {
+      try {
+        const stopped = await d.ensureChrootStopped();
+        if (!stopped) {
+          d.appendConsole("✗ Failed to stop chroot - uninstall aborted", "err");
+          if (d.activeCommandId) d.activeCommandId.value = null;
+          d.disableAllActions?.(false);
+          d.disableSettingsPopup?.(false, true);
+          return;
+        }
+      } catch (err: any) {
+        d.appendConsole(
+          "✗ Failed to ensure chroot stopped - uninstall aborted",
+          "err",
+        );
         d.disableAllActions?.(false);
         d.disableSettingsPopup?.(false, true);
         return;
       }
-    } catch (err: any) {
-      d.appendConsole(
-        "✗ Failed to ensure chroot stopped - uninstall aborted",
-        "err",
-      );
-      d.disableAllActions?.(false);
-      d.disableSettingsPopup?.(false, true);
-      return;
     }
-  }
 
-  // Prepare an action header and progress indicator
-  const progress = d.prepareActionExecution
-    ? await d.prepareActionExecution(
-        "Starting Uninstallation",
-        "Uninstalling chroot",
-        "dots",
-      )
-    : null;
+    // Prepare an action header and progress indicator
+    const progress = d.prepareActionExecution
+      ? await d.prepareActionExecution(
+          "Starting Uninstallation",
+          "Uninstalling chroot",
+          "dots",
+        )
+      : null;
 
-  const cmdStr = `sh ${d.PATH_CHROOT_SH} uninstall --webui`;
+    const cmdStr = `sh ${d.PATH_CHROOT_SH} uninstall --webui`;
 
-  // Prefer the higher-level executeCommandWithProgress if available
-  if (d.executeCommandWithProgress) {
-    const commandId = d.executeCommandWithProgress({
-      cmd: cmdStr,
-      progress: progress
-        ? {
-            progressLine: progress.progressLine,
-            progressInterval: progress.interval,
+    // Prefer the higher-level executeCommandWithProgress if available
+    if (d.executeCommandWithProgress) {
+      const commandId = d.executeCommandWithProgress({
+        cmd: cmdStr,
+        progress: progress
+          ? {
+              progressLine: progress.progressLine,
+              progressInterval: progress.interval,
+            }
+          : null,
+        onSuccess: async (result?: any) => {
+          d.appendConsole("✅ Chroot uninstalled successfully!", "success");
+          d.appendConsole("All chroot data has been removed.", "info");
+          d.appendConsole("━━━ Uninstallation Complete ━━━", "success");
+
+          // After uninstall, update status & refresh UI state
+          d.updateStatus?.("stopped");
+          d.updateModuleStatus?.();
+          d.disableAllActions?.(true);
+          d.disableSettingsPopup?.(false, false);
+
+          // Force a status refresh so UI shows chroot missing and appropriate buttons
+          try {
+            await d.refreshStatus?.();
+          } catch {
+            // ignore refresh errors
           }
-        : null,
-      onSuccess: async (result?: any) => {
-        d.appendConsole("✅ Chroot uninstalled successfully!", "success");
-        d.appendConsole("All chroot data has been removed.", "info");
-        d.appendConsole("━━━ Uninstallation Complete ━━━", "success");
+        },
+        onError: async (result?: any) => {
+          d.appendConsole("✗ Uninstallation failed", "err");
+          d.appendConsole("Check the logs above for details.", "err");
+          d.updateModuleStatus?.();
+          d.disableAllActions?.(false);
+          d.disableSettingsPopup?.(false, false);
 
-        // After uninstall, update status & refresh UI state
-        d.updateStatus?.("stopped");
-        d.updateModuleStatus?.();
-        d.disableAllActions?.(true);
-        d.disableSettingsPopup?.(false, false);
+          try {
+            await d.refreshStatus?.();
+          } catch {
+            // ignore
+          }
+        },
+        useValue: true,
+        activeCommandIdRef: d.activeCommandId,
+      });
 
-        // Force a status refresh so UI shows chroot missing and appropriate buttons
-        try {
-          await d.refreshStatus?.();
-        } catch {
-          // ignore refresh errors
-        }
-      },
-      onError: async (result?: any) => {
-        d.appendConsole("✗ Uninstallation failed", "err");
-        d.appendConsole("Check the logs above for details.", "err");
-        d.updateModuleStatus?.();
+      if (!commandId) {
+        // Validation probably failed; re-enable UI
         d.disableAllActions?.(false);
         d.disableSettingsPopup?.(false, false);
+      }
+      return;
+    }
 
-        try {
-          await d.refreshStatus?.();
-        } catch {
-          // ignore
-        }
-      },
-      useValue: true,
-      activeCommandIdRef: d.activeCommandId,
-    });
+    // Fallback: run synchronously
+    try {
+      if (!d.runCmdSync) throw new Error("runCmdSync not available");
+      const out = await d.runCmdSync(cmdStr);
+      d.appendConsole("✅ Chroot uninstalled successfully!", "success");
+      d.appendConsole("All chroot data has been removed.", "info");
+      d.appendConsole("━━━ Uninstallation Complete ━━━", "success");
+      d.updateStatus?.("stopped");
+      d.updateModuleStatus?.();
+      d.disableAllActions?.(true);
+      d.disableSettingsPopup?.(false, false);
 
-    if (!commandId) {
-      // Validation probably failed; re-enable UI
+      try {
+        await d.refreshStatus?.();
+      } catch {
+        // ignore
+      }
+    } catch (err: any) {
+      d.appendConsole("✗ Uninstallation failed", "err");
+      d.appendConsole(String(err?.message || err), "err");
+      d.updateModuleStatus?.();
       d.disableAllActions?.(false);
       d.disableSettingsPopup?.(false, false);
-    }
-    return;
-  }
 
-  // Fallback: run synchronously
-  try {
-    if (!d.runCmdSync) throw new Error("runCmdSync not available");
-    const out = await d.runCmdSync(cmdStr);
-    d.appendConsole("✅ Chroot uninstalled successfully!", "success");
-    d.appendConsole("All chroot data has been removed.", "info");
-    d.appendConsole("━━━ Uninstallation Complete ━━━", "success");
-    d.updateStatus?.("stopped");
-    d.updateModuleStatus?.();
-    d.disableAllActions?.(true);
-    d.disableSettingsPopup?.(false, false);
-
-    try {
-      await d.refreshStatus?.();
-    } catch {
-      // ignore
-    }
-  } catch (err: any) {
-    d.appendConsole("✗ Uninstallation failed", "err");
-    d.appendConsole(String(err?.message || err), "err");
-    d.updateModuleStatus?.();
-    d.disableAllActions?.(false);
-    d.disableSettingsPopup?.(false, false);
-
-    try {
-      await d.refreshStatus?.();
-    } catch {
-      // ignore
-    }
-  } finally {
-    // Ensure progress indicator is removed
-    if (progress && d.ProgressIndicator) {
       try {
-        d.ProgressIndicator.remove(progress);
-      } catch {}
+        await d.refreshStatus?.();
+      } catch {
+        // ignore
+      }
+    } finally {
+      // Ensure progress indicator is removed
+      if (progress && d.ProgressIndicator) {
+        try {
+          d.ProgressIndicator.remove(progress);
+        } catch {}
+      }
+    }
+  } catch (error: any) {
+    console.error("Error in uninstallChroot:", error);
+    // Try to append to console if possible
+    if (deps?.appendConsole) {
+      deps.appendConsole(
+        `Uninstall error: ${String(error?.message || error)}`,
+        "err",
+      );
     }
   }
 }

@@ -1,4 +1,5 @@
 export const CHROOT_DIR = "/data/local/ubuntu-chroot";
+export const ROOTFS_DIR = `${CHROOT_DIR}/rootfs`;
 export const PATH_CHROOT_SH = `${CHROOT_DIR}/chroot.sh`;
 export const HOTSPOT_SCRIPT = `${CHROOT_DIR}/start-hotspot`;
 export const FORWARD_NAT_SCRIPT = `${CHROOT_DIR}/forward-nat.sh`;

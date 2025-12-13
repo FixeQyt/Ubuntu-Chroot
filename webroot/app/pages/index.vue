@@ -123,6 +123,7 @@ import { useHotspot } from "@/composables/useHotspot";
 import { useForwardNat } from "@/composables/useForwardNat";
 import { useSettings } from "@/composables/useSettings";
 import { useFeatures } from "@/composables/useFeatures";
+import { ROOTFS_DIR } from "@/composables/constants";
 
 const cmd = useNativeCmd();
 const consoleApi = useConsole();
@@ -266,6 +267,14 @@ watch(androidOptimize, (val) => {
 });
 
 onMounted(async () => {
+  // Check if ROOTFS_DIR exists
+  const check = await cmd.runCommandSync(`ls -ld ${ROOTFS_DIR} 2>&1`);
+  const result = String(check || "").trim();
+  if (result.includes("No such file or directory")) {
+    navigateTo("/not-found");
+    return;
+  }
+
   updateStatus("unknown");
   // bind & load console now handled by composable
   try {
