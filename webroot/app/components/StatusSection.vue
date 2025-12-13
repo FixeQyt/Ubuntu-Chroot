@@ -4,7 +4,11 @@
       Ubuntu Chroot
       <span
         id="debug-indicator"
-        class="debug-indicator-tiny debug-indicator-hidden"
+        :class="
+          debugMode
+            ? 'debug-indicator-tiny'
+            : 'debug-indicator-tiny debug-indicator-hidden'
+        "
         >DEBUG</span
       >
     </h2>
@@ -55,6 +59,7 @@ interface Props {
   startDisabled: boolean;
   stopDisabled: boolean;
   restartDisabled: boolean;
+  debugMode: boolean;
 }
 
 const props = defineProps<Props>();

@@ -7,6 +7,7 @@ export type UseConsoleOptions = {
   batchSize?: number;
   scrollThreshold?: number;
   saveDebounceMs?: number;
+  consoleRef?: Ref<HTMLElement | null>;
 };
 
 export function useConsole(options: UseConsoleOptions = {}) {
@@ -18,7 +19,8 @@ export function useConsole(options: UseConsoleOptions = {}) {
     saveDebounceMs = 500,
   } = options;
 
-  const consoleRef: Ref<HTMLElement | null> = ref<HTMLElement | null>(null);
+  const consoleRef: Ref<HTMLElement | null> =
+    options.consoleRef || ref<HTMLElement | null>(null);
 
   const buffer: Array<{ text: string; cls?: string }> = [];
 

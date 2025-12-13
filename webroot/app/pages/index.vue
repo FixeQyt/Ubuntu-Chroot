@@ -1,4 +1,5 @@
 <template>
+  <LoadingScreen v-if="showLoading" />
   <div class="app">
     <Header
       @openForwardNatPopup="openForwardNatPopup"
@@ -12,6 +13,7 @@
         :startDisabled="startDisabled"
         :stopDisabled="stopDisabled"
         :restartDisabled="restartDisabled"
+        :debugMode="debugMode"
         @start="start"
         @stop="stop"
         @restart="restart"
@@ -29,9 +31,7 @@
       />
 
       <ConsoleSection
-        :consoleRef="consoleRef"
-        @copyConsole="copyConsole"
-        @clearConsole="clearConsole"
+        :logBuffer="consoleApi"
         @refreshStatusManual="refreshStatusManual"
       />
     </main>
@@ -110,6 +110,7 @@ import SparseSettingsPopup from "@/components/SparseSettingsPopup.vue";
 import HotspotPopup from "@/components/HotspotPopup.vue";
 import ForwardNatPopup from "@/components/ForwardNatPopup.vue";
 import Footer from "@/components/Footer.vue";
+import LoadingScreen from "@/components/LoadingScreen.vue";
 import HotspotFeature from "@/features/hotspot";
 import ForwardNatFeature from "@/features/forward-nat";
 import BackupRestoreFeature from "@/features/backup-restore";
@@ -124,8 +125,7 @@ import { useFeatures } from "@/composables/useFeatures";
 
 const cmd = useNativeCmd();
 const consoleApi = useConsole();
-
-const consoleRef = consoleApi.consoleRef;
+const showLoading = ref(true);
 
 const {
   statusText,
@@ -301,6 +301,51 @@ watch(debugMode, (val) => {
 
 watch(androidOptimize, (val) => {
   writeDozeOffFile();
+});
+
+onMounted(async () => {
+  // bind & load console now handled by composable
+  try {
+    const overlayCount = document.querySelectorAll(
+      ".popup-overlay.active",
+    ).length;
+    appendConsole(`DEBUG: popup-overlay active count=${overlayCount}`, "debug");
+  } catch (e) {
+    // best-effort only
+  }
+
+  const rootOK = await checkRootAccess();
+  if (rootOK) {
+    await refreshStatus();
+    await fetchUsers();
+  }
+  await readBootFile(true).catch(() => {});
+  await readDozeOffFile(true).catch(() => {});
+
+  initFeatureModules();
+  setTimeout(() => {
+    try {
+      if (
+        typeof HotspotFeature !== "undefined" &&
+        HotspotFeature.fetchInterfaces
+      ) {
+        HotspotFeature.fetchInterfaces(false, true).catch(() => {});
+      }
+    } catch {}
+    try {
+      if (
+        typeof ForwardNatFeature !== "undefined" &&
+        ForwardNatFeature.fetchInterfaces
+      ) {
+        ForwardNatFeature.fetchInterfaces(false, true).catch(() => {});
+      }
+    } catch {}
+  }, 250);
+
+  // Hide loading screen after initialization
+  setTimeout(() => {
+    showLoading.value = false;
+  }, 1000);
 });
 </script>
 

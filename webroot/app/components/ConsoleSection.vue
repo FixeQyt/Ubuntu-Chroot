@@ -6,17 +6,17 @@
         id="copy-console"
         class="btn outline small console-copy-btn"
         title="Copy console logs"
-        @click="$emit('copyConsole')"
+        @click="logBuffer.copyLogs()"
       >
         <Icon name="copy" size="16" />
       </button>
     </div>
-    <pre id="console" class="console" ref="consoleRef"></pre>
+    <pre id="console" class="console" ref="consoleEl"></pre>
     <div class="console-actions">
       <button
         id="clear-console"
         class="btn outline small"
-        @click="$emit('clearConsole')"
+        @click="logBuffer.clearConsole()"
       >
         Clear
       </button>
@@ -32,18 +32,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import Icon from "@/components/Icon.vue";
+import useConsole from "@/composables/useConsole";
 
 interface Props {
-  consoleRef: any;
+  logBuffer: ReturnType<typeof useConsole>;
 }
 
 const props = defineProps<Props>();
 
+const { logBuffer } = props;
+
+const consoleEl = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  logBuffer.consoleRef = consoleEl;
+});
+
 defineEmits<{
-  copyConsole: [];
-  clearConsole: [];
   refreshStatusManual: [];
 }>();
 </script>

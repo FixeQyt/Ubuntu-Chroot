@@ -294,6 +294,15 @@ export function useChroot() {
       return;
     }
 
+    // Set UI to in-progress state immediately for responsiveness
+    updateStatus(
+      action === "start"
+        ? "starting"
+        : action === "stop"
+          ? "stopping"
+          : "restarting",
+    );
+
     await consoleApi.scrollToBottom({ behavior: "smooth", waitMs: 200 });
     const actionText =
       action === "start"
@@ -309,21 +318,57 @@ export function useChroot() {
 
     try {
       const cmdStr = `sh ${PATH_CHROOT_SH} ${action} --no-shell`;
+      console.log(`Running command: ${cmdStr}`);
       const result = await cmd.runCommandAsyncPromise(cmdStr, {
         asRoot: true,
         debug: debugMode.value,
+        onOutput: (line: string) => appendConsole(line),
       });
       if (result.success) {
-        appendConsole(`✓ ${action} completed successfully`, "success");
-        await refreshStatus();
+        try {
+          // Verify the action was successful by checking status
+          await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait a bit for status to update
+          const verifyOut = await cmd.runCommandSync(
+            `sh ${PATH_CHROOT_SH} status`,
+          );
+          const verifyStatus = String(verifyOut || "");
+          const isRunning = /Status:\s*RUNNING/i.test(verifyStatus);
+
+          const expectedRunning =
+            action === "start" || (action === "restart" && true); // restart should end up running
+          const expectedStopped = action === "stop";
+
+          if (
+            (expectedRunning && isRunning) ||
+            (expectedStopped && !isRunning) ||
+            action === "restart"
+          ) {
+            appendConsole(`✓ ${action} completed successfully`, "success");
+            await refreshStatus();
+          } else {
+            appendConsole(
+              `⚠ ${action} completed but status verification failed`,
+              "warn",
+            );
+            await refreshStatus(); // Refresh anyway
+          }
+        } catch (e: any) {
+          appendConsole(
+            `✓ ${action} command succeeded, but verification failed: ${e.message}`,
+            "warn",
+          );
+          await refreshStatus(); // Still refresh to update UI
+        }
       } else {
         appendConsole(
           `✗ ${action} failed: ${result.error || "Unknown error"}`,
           "err",
         );
+        await refreshStatus(); // Refresh to revert UI state
       }
     } catch (e: any) {
-      appendConsole(`✗ ${action} failed: ${e?.message || String(e)}`, "err");
+      appendConsole(`Failed to execute ${action}: ${e.message}`, "err");
+      await refreshStatus();
     } finally {
       ProgressIndicator.remove(progress);
     }
