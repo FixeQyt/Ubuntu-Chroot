@@ -1,6 +1,6 @@
 export const ButtonState = {
   setButton(
-    btn: HTMLElement | null | undefined,
+    btn: HTMLButtonElement | null | undefined,
     enabled: boolean,
     visible = true,
     opacity: string | null = null,
@@ -18,8 +18,8 @@ export const ButtonState = {
   },
 
   setButtonPair(
-    startBtn: HTMLElement | null | undefined,
-    stopBtn: HTMLElement | null | undefined,
+    startBtn: HTMLButtonElement | null | undefined,
+    stopBtn: HTMLButtonElement | null | undefined,
     isActive: boolean,
   ) {
     this.setButton(startBtn, !isActive, true, "0.5");
@@ -28,7 +28,7 @@ export const ButtonState = {
 
   setButtons(
     buttons: Array<{
-      btn: HTMLElement | null | undefined;
+      btn: HTMLButtonElement | null | undefined;
       enabled: boolean;
       visible?: boolean;
       opacity?: string | null;

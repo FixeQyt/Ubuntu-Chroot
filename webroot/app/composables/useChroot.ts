@@ -304,7 +304,7 @@ export function useChroot() {
     const progress = ProgressIndicator.create(
       actionText,
       "dots",
-      consoleRef || document.getElementById("console"),
+      consoleRef.value || document.getElementById("console"),
     );
 
     try {
@@ -456,11 +456,8 @@ export function useChroot() {
       return;
     }
 
-    const confirmed = confirm(
-      "Update Chroot Environment",
-      "This will apply any available updates to the chroot environment.\n\nThe chroot will be started if it's not running. Continue?",
-      "Update",
-      "Cancel",
+    const confirmed = window.confirm(
+      "Update Chroot Environment\n\nThis will apply any available updates to the chroot environment.\n\nThe chroot will be started if it's not running. Continue?",
     );
 
     if (!confirmed) return;

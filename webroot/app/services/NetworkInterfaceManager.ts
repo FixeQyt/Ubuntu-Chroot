@@ -63,7 +63,7 @@ export class NetworkInterfaceManager {
 
       const option = document.createElement("option");
       if (trimmed.includes(":")) {
-        const [iface, ip] = trimmed.split(":").map((s) => s.trim());
+        const [iface = "", ip = ""] = trimmed.split(":").map((s) => s.trim());
         option.value = iface;
         option.textContent = `${iface} (${ip})`;
       } else {
