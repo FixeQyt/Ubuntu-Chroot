@@ -45,7 +45,8 @@ rm -f "$ZIP_NAME"
 TMP_DIR=$(mktemp -d)
 
 # Build webroot
-cd webroot/app
+cd webroot
+bun i
 bun run generate
 cd ../../
 
