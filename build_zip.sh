@@ -48,7 +48,7 @@ TMP_DIR=$(mktemp -d)
 cd webroot
 bun i
 bun run generate
-cd ../../
+cd ..
 
 # Copy all files except excluded
 rsync -a --exclude='.git*' --exclude='node_modules' --exclude='Screenshots' --exclude='Docker' --exclude='CHANGELOG.md' --exclude='out' --exclude='update-*.json' --exclude='update_meta.sh' --exclude='build_zip.sh' "$PWD/" "$TMP_DIR/"
