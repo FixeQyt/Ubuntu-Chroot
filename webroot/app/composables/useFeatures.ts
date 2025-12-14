@@ -234,9 +234,20 @@ export function useFeatures(
             debug: false,
             callbacks: { onComplete },
           }),
-        runCommandAsyncPromise: (cmdStr: string, options?: { asRoot?: boolean; debug?: boolean; onOutput?: (line: string) => void }) =>
-          cmd.runCommandAsyncPromise(cmdStr, { asRoot: true, ...options }),
-        showConfirmDialog: async (title: string, message: string, confirmText?: string, cancelText?: string) => Promise.resolve(window.confirm(message)),
+        runCommandAsyncPromise: (
+          cmdStr: string,
+          options?: {
+            asRoot?: boolean;
+            debug?: boolean;
+            onOutput?: (line: string) => void;
+          },
+        ) => cmd.runCommandAsyncPromise(cmdStr, { asRoot: true, ...options }),
+        showConfirmDialog: async (
+          title: string,
+          message: string,
+          confirmText?: string,
+          cancelText?: string,
+        ) => Promise.resolve(window.confirm(message)),
         withCommandGuard,
         ANIMATION_DELAYS: {
           POPUP_CLOSE: 450,

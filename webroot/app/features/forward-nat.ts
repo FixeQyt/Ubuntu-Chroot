@@ -34,7 +34,14 @@ export type ForwardNatDeps = {
   appendConsole: (text: string, cls?: string) => void;
   runCmdSync: (cmd: string) => Promise<string>;
   runCmdAsync?: (cmd: string, onComplete?: (res: any) => void) => string | null;
-  runCommandAsyncPromise?: (cmd: string, options?: { asRoot?: boolean; debug?: boolean; onOutput?: (line: string) => void }) => Promise<CommandResult>;
+  runCommandAsyncPromise?: (
+    cmd: string,
+    options?: {
+      asRoot?: boolean;
+      debug?: boolean;
+      onOutput?: (line: string) => void;
+    },
+  ) => Promise<CommandResult>;
 
   // Flow & UI management
   withCommandGuard?: (id: string, fn: () => Promise<void>) => Promise<void>;
@@ -266,12 +273,14 @@ export async function startForwarding() {
 
     try {
       const cmd = `sh ${d.FORWARD_NAT_SCRIPT} -i "${iface}" 2>&1`;
-      const result = await d.runCommandAsyncPromise?.(cmd, { onOutput: (line) => d.appendConsole?.(line) });
+      const result = await d.runCommandAsyncPromise?.(cmd, {
+        onOutput: (line) => d.appendConsole?.(line),
+      });
       if (!result || !result.success) {
         d.appendConsole?.("✗ Failed to start forwarding", "err");
         return;
       }
-      const outStr = result.output || '';
+      const outStr = result.output || "";
 
       // Heuristic: treat as success unless we see explicit error keywords.
       const failureRegex = /fail(ed)?|error|permission denied|not found/i;
@@ -346,7 +355,9 @@ export async function stopForwarding() {
 
     try {
       const cmd = `sh ${d.FORWARD_NAT_SCRIPT} -k 2>&1`;
-      const result = await d.runCommandAsyncPromise?.(cmd, { onOutput: (line) => d.appendConsole?.(line) });
+      const result = await d.runCommandAsyncPromise?.(cmd, {
+        onOutput: (line) => d.appendConsole?.(line),
+      });
       // cleanup
       d.ProgressIndicator?.remove?.(progress ?? null);
       // Always clear the state marker, even if there were errors

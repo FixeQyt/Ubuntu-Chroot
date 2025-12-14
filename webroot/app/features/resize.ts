@@ -28,7 +28,14 @@ export type ResizeDeps = {
     cmd: string,
     onComplete?: (result: any) => void,
   ) => string | null;
-  runCommandAsyncPromise?: (cmd: string, options?: { asRoot?: boolean; debug?: boolean; onOutput?: (line: string) => void }) => Promise<CommandResult>;
+  runCommandAsyncPromise?: (
+    cmd: string,
+    options?: {
+      asRoot?: boolean;
+      debug?: boolean;
+      onOutput?: (line: string) => void;
+    },
+  ) => Promise<CommandResult>;
 
   // A convenience, higher-level helper used by the app to orchestrate long-running jobs
   executeCommandWithProgress?: (options: {
@@ -182,7 +189,9 @@ export async function trimSparseImage() {
 
   // Fallback: run async
   try {
-    const result = await d.runCommandAsyncPromise?.(cmd, { onOutput: (line) => d.appendConsole(line) });
+    const result = await d.runCommandAsyncPromise?.(cmd, {
+      onOutput: (line) => d.appendConsole(line),
+    });
     if (result?.success) {
       d.appendConsole("✓ Sparse image trimmed successfully", "success");
       d.updateModuleStatus?.();
@@ -348,7 +357,9 @@ export async function resizeSparseImage() {
 
   // fallback to async command
   try {
-    const result = await d.runCommandAsyncPromise?.(cmdStr, { onOutput: (line) => d.appendConsole(line) });
+    const result = await d.runCommandAsyncPromise?.(cmdStr, {
+      onOutput: (line) => d.appendConsole(line),
+    });
     if (result?.success) {
       d.appendConsole("✅ Sparse image resized successfully", "success");
       d.appendConsole(`New size: ${newSizeGb}GB`, "info");

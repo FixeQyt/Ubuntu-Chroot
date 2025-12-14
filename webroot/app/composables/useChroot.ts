@@ -91,10 +91,10 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
           `Found ${users.value.length} regular user(s) in chroot`,
           "info",
         );
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (!silent)
         appendConsole(
-          `Could not fetch users from chroot: ${e.message}`,
+          `Could not fetch users from chroot: ${String(e)}`,
           "warn",
         );
       users.value = [];
@@ -147,15 +147,15 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
       } else {
         if (!silent)
           appendConsole(
-            `Failed to detect root execution method: ${result.error || 'Unknown error'}`,
+            `Failed to detect root execution method: ${result.error || "Unknown error"}`,
             "err",
           );
         return false;
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (!silent)
         appendConsole(
-          `Failed to detect root execution method: ${e.message}`,
+          `Failed to detect root execution method: ${String(e)}`,
           "err",
         );
       return false;
@@ -204,14 +204,14 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
         userSelectDisabled.value = true;
         copyLoginDisabled.value = true;
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       statusText.value = "unknown";
       startDisabled.value = true;
       stopDisabled.value = true;
       restartDisabled.value = true;
       userSelectDisabled.value = true;
       copyLoginDisabled.value = true;
-      appendConsole(`Failed to get status: ${e.message}`, "warn");
+      appendConsole(`Failed to get status: ${String(e)}`, "warn");
     }
   }
 
@@ -344,8 +344,8 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
           );
           await refreshStatus();
         }
-      } catch (e: any) {
-        appendConsole(`Failed to execute ${action}: ${e.message}`, "err");
+      } catch (e: unknown) {
+        appendConsole(`Failed to execute ${action}: ${String(e)}`, "err");
         await refreshStatus();
       } finally {
         ProgressIndicator.remove(progress);
@@ -390,11 +390,14 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
           "success",
         );
       } else {
-        appendConsole(`✗ Failed to set run-at-boot: ${result.error || 'Unknown error'}`, "err");
+        appendConsole(
+          `✗ Failed to set run-at-boot: ${result.error || "Unknown error"}`,
+          "err",
+        );
         await readBootFile(true);
       }
-    } catch (e: any) {
-      appendConsole(`✗ Failed to set run-at-boot: ${e.message}`, "err");
+    } catch (e: unknown) {
+      appendConsole(`✗ Failed to set run-at-boot: ${String(e)}`, "err");
       await readBootFile(true);
     }
   }
@@ -431,14 +434,14 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
         );
       } else {
         appendConsole(
-          `✗ Failed to set Android optimizations: ${result.error || 'Unknown error'}`,
+          `✗ Failed to set Android optimizations: ${result.error || "Unknown error"}`,
           "err",
         );
         await readDozeOffFile(true);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       appendConsole(
-        `✗ Failed to set Android optimizations: ${e.message}`,
+        `✗ Failed to set Android optimizations: ${String(e)}`,
         "err",
       );
       await readDozeOffFile(true);
@@ -471,31 +474,44 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
         `echo '${base64}' | base64 -d > ${CHROOT_DIR}/post_exec.sh`,
       );
       if (!result1.success) {
-        appendConsole(`Failed to save post-exec script: ${result1.error || 'Unknown error'}`, "err");
+        appendConsole(
+          `Failed to save post-exec script: ${result1.error || "Unknown error"}`,
+          "err",
+        );
         return;
       }
-      const result2 = await cmd.runCommandAsyncPromise(`chmod 755 ${CHROOT_DIR}/post_exec.sh`);
+      const result2 = await cmd.runCommandAsyncPromise(
+        `chmod 755 ${CHROOT_DIR}/post_exec.sh`,
+      );
       if (result2.success) {
         appendConsole("Post-exec script saved successfully", "success");
       } else {
-        appendConsole(`Failed to set permissions: ${result2.error || 'Unknown error'}`, "err");
+        appendConsole(
+          `Failed to set permissions: ${result2.error || "Unknown error"}`,
+          "err",
+        );
       }
-    } catch (e: any) {
-      appendConsole(`Failed to save post-exec script: ${e.message}`, "err");
+    } catch (e: unknown) {
+      appendConsole(`Failed to save post-exec script: ${String(e)}`, "err");
     }
   }
 
   async function clearPostExecScript() {
     postExecScript.value = "";
     try {
-      const result = await cmd.runCommandAsyncPromise(`echo '' > ${CHROOT_DIR}/post_exec.sh`);
+      const result = await cmd.runCommandAsyncPromise(
+        `echo '' > ${CHROOT_DIR}/post_exec.sh`,
+      );
       if (result.success) {
         appendConsole("Post-exec script cleared successfully", "info");
       } else {
-        appendConsole(`Failed to clear post-exec script: ${result.error || 'Unknown error'}`, "err");
+        appendConsole(
+          `Failed to clear post-exec script: ${result.error || "Unknown error"}`,
+          "err",
+        );
       }
-    } catch (e) {
-      appendConsole(`Failed to clear post-exec script: ${e.message}`, "err");
+    } catch (e: unknown) {
+      appendConsole(`Failed to clear post-exec script: ${String(e)}`, "err");
     }
   }
 
@@ -537,8 +553,8 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
       } else {
         appendConsole("✗ Chroot update failed", "err");
       }
-    } catch (e: any) {
-      appendConsole(`✗ Update failed: ${e?.message || String(e)}`, "err");
+    } catch (e: unknown) {
+      appendConsole(`✗ Update failed: ${String(e)}`, "err");
     } finally {
       await refreshStatus();
     }

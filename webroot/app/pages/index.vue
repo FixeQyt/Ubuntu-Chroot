@@ -251,7 +251,9 @@ watch(
               typeof ForwardNatFeature !== "undefined" &&
               ForwardNatFeature.fetchInterfaces
             ) {
-              await ForwardNatFeature.fetchInterfaces(false, true).catch(() => {});
+              await ForwardNatFeature.fetchInterfaces(false, true).catch(
+                () => {},
+              );
             }
           } catch {}
         })(),

@@ -22,7 +22,14 @@ export type MigrateDeps = {
   PATH_CHROOT_SH: string;
   runCmdSync?: (cmd: string) => Promise<string>;
   runCmdAsync?: (cmd: string, onComplete?: (res: any) => void) => string | null;
-  runCommandAsyncPromise?: (cmd: string, options?: { asRoot?: boolean; debug?: boolean; onOutput?: (line: string) => void }) => Promise<CommandResult>;
+  runCommandAsyncPromise?: (
+    cmd: string,
+    options?: {
+      asRoot?: boolean;
+      debug?: boolean;
+      onOutput?: (line: string) => void;
+    },
+  ) => Promise<CommandResult>;
   executeCommandWithProgress?: (options: {
     cmd: string;
     progress: { progressLine: HTMLElement; progressInterval?: any } | null;
@@ -189,9 +196,14 @@ export async function migrateToSparseImage(): Promise<void> {
     } else {
       // Fallback path: use runCommandAsyncPromise
       try {
-        const result = await d.runCommandAsyncPromise?.(migrateCommand, { onOutput: (line) => d.appendConsole(line) });
+        const result = await d.runCommandAsyncPromise?.(migrateCommand, {
+          onOutput: (line) => d.appendConsole(line),
+        });
         if (result?.success) {
-          d.appendConsole("✅ Sparse image migration completed successfully!", "success");
+          d.appendConsole(
+            "✅ Sparse image migration completed successfully!",
+            "success",
+          );
           if (d.sparseMigrated) d.sparseMigrated.value = true;
           d.updateModuleStatus?.();
         } else {
@@ -205,7 +217,10 @@ export async function migrateToSparseImage(): Promise<void> {
           (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
         );
       } catch (err: any) {
-        d.appendConsole(`✗ Sparse image migration failed: ${String(err?.message || err)}`, "err");
+        d.appendConsole(
+          `✗ Sparse image migration failed: ${String(err?.message || err)}`,
+          "err",
+        );
         d.updateModuleStatus?.();
         d.disableAllActions?.(false);
         d.disableSettingsPopup?.(false, true);

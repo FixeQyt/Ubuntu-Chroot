@@ -38,7 +38,14 @@ interface HotspotDeps {
     cmd: string,
     onComplete?: (result: any) => void,
   ) => string | null;
-  runCommandAsyncPromise?: (cmd: string, options?: { asRoot?: boolean; debug?: boolean; onOutput?: (line: string) => void }) => Promise<CommandResult>;
+  runCommandAsyncPromise?: (
+    cmd: string,
+    options?: {
+      asRoot?: boolean;
+      debug?: boolean;
+      onOutput?: (line: string) => void;
+    },
+  ) => Promise<CommandResult>;
   withCommandGuard: (id: string, fn: () => Promise<void>) => Promise<void>;
   ANIMATION_DELAYS: Record<string, number>;
   ProgressIndicator: {
@@ -350,7 +357,9 @@ const HotspotFeature = (() => {
 
       try {
         const cmdLine = `sh ${HOTSPOT_SCRIPT} -o "${iface}" -s "${ssid}" -p "${password}" -b "${band}" -c "${channel}" 2>&1`;
-        const result = await d.runCommandAsyncPromise?.(cmdLine, { onOutput: (line) => appendConsole(line) });
+        const result = await d.runCommandAsyncPromise?.(cmdLine, {
+          onOutput: (line) => appendConsole(line),
+        });
         if (!result || !result.success) {
           appendConsole("✗ Failed to start hotspot", "err");
         } else {
@@ -380,8 +389,7 @@ const HotspotFeature = (() => {
           String(err?.message || err || "Failed to start hotspot"),
           "err",
         );
-      }
-      finally {
+      } finally {
         // remove progress indicator
         if (progressHandle) ProgressIndicator?.remove(progressHandle);
         // Re-enable UI
@@ -433,7 +441,9 @@ const HotspotFeature = (() => {
 
       try {
         const cmdLine = `sh ${HOTSPOT_SCRIPT} -k 2>&1`;
-        const result = await d.runCommandAsyncPromise?.(cmdLine, { onOutput: (line) => appendConsole(line) });
+        const result = await d.runCommandAsyncPromise?.(cmdLine, {
+          onOutput: (line) => appendConsole(line),
+        });
         // Clean progress indicator
         if (progressHandle) d.ProgressIndicator?.remove(progressHandle);
         // Clear state

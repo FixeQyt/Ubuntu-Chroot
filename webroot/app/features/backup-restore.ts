@@ -7,7 +7,14 @@ export type BackupRestoreDeps = {
   appendConsole: (text: string, cls?: string) => void;
   runCmdSync: (cmd: string) => Promise<string>;
   runCmdAsync?: (cmd: string, onComplete?: (res: any) => void) => string | null;
-  runCommandAsyncPromise?: (cmd: string, options?: { asRoot?: boolean; debug?: boolean; onOutput?: (line: string) => void }) => Promise<CommandResult>;
+  runCommandAsyncPromise?: (
+    cmd: string,
+    options?: {
+      asRoot?: boolean;
+      debug?: boolean;
+      onOutput?: (line: string) => void;
+    },
+  ) => Promise<CommandResult>;
   Storage: {
     get?: (key: string, defaultValue?: any) => any;
     set?: (key: string, value: any) => void;
@@ -246,7 +253,9 @@ export async function backupChroot() {
       }
     } else {
       try {
-        const result = await d.runCommandAsyncPromise?.(cmdStr, { onOutput: (line) => d.appendConsole(line) });
+        const result = await d.runCommandAsyncPromise?.(cmdStr, {
+          onOutput: (line) => d.appendConsole(line),
+        });
         if (progress) d.ProgressIndicator?.remove(progress);
         if (result?.success) {
           d.appendConsole(`✓ Backup completed successfully`, "success");
@@ -260,7 +269,10 @@ export async function backupChroot() {
             d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
           );
         } else {
-          d.appendConsole(`✗ Backup failed: ${result?.error || 'Unknown error'}`, "err");
+          d.appendConsole(
+            `✗ Backup failed: ${result?.error || "Unknown error"}`,
+            "err",
+          );
           d.updateModuleStatus?.();
           d.disableAllActions?.(false);
           d.disableSettingsPopup?.(false, true);
@@ -271,7 +283,10 @@ export async function backupChroot() {
         }
       } catch (err: any) {
         if (progress) d.ProgressIndicator?.remove(progress);
-        d.appendConsole(`✗ Backup failed: ${String(err?.message || err)}`, "err");
+        d.appendConsole(
+          `✗ Backup failed: ${String(err?.message || err)}`,
+          "err",
+        );
         d.updateModuleStatus?.();
         d.disableAllActions?.(false);
         d.disableSettingsPopup?.(false, true);
@@ -424,7 +439,9 @@ export async function restoreChroot() {
       }
     } else {
       try {
-        const result = await d.runCommandAsyncPromise?.(cmdStr, { onOutput: (line) => d.appendConsole(line) });
+        const result = await d.runCommandAsyncPromise?.(cmdStr, {
+          onOutput: (line) => d.appendConsole(line),
+        });
         if (progress) d.ProgressIndicator?.remove?.(progress ?? null);
         if (result?.success) {
           d.appendConsole("✓ Restore completed successfully", "success");
