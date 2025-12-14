@@ -3,18 +3,18 @@ name: Build and Release GUI and CLI
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release Version (e.g., v3.1)'
+        description: "Release Version (e.g., v3.1)"
         required: true
       update_jsons_only:
-        description: 'Only update the JSONs and Changelog (skip build and release)'
+        description: "Only update the JSONs and Changelog (skip build and release)"
         type: boolean
         default: false
       only_build_update_zip:
-        description: 'Only build the update ZIP (skip rootfs and full ZIP)'
+        description: "Only build the update ZIP (skip rootfs and full ZIP)"
         type: boolean
         default: false
 
@@ -34,6 +34,10 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y jq
@@ -112,7 +116,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ matrix.branch }}
-          fetch-depth: 0  # Fetch all history for proper tag comparison
+          fetch-depth: 0 # Fetch all history for proper tag comparison
 
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y rsync python3
