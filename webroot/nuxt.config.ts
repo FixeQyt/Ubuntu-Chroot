@@ -2,14 +2,8 @@
 import { defineNuxtConfig } from "nuxt/config";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
-  ssr: false,
+  ssr: true,
   devtools: { enabled: true },
-
-  nitro: {
-    routeRules: {
-      "/index.html": { redirect: "/" },
-    },
-  },
 
   vite: {
     build: {
