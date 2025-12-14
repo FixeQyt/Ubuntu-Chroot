@@ -34,7 +34,8 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
   const activeCommandId = ref<string | null>(null);
 
   const rootAccessConfirmedRef = ref<boolean>(cmd.isAvailable.value);
-  const showBackupProgress = ref<boolean>(false);
+  const showProgress = ref<boolean>(false);
+  const progressType = ref<"backup" | "restore" | null>(null);
 
   const statusDotClass = computed(() => {
     switch (statusText.value) {
@@ -576,7 +577,8 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
     postExecScript,
     activeCommandId,
     rootAccessConfirmedRef,
-    showBackupProgress,
+    showProgress,
+    progressType,
     statusDotClass,
     appendConsole,
     withCommandGuard,

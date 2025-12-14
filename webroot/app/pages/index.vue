@@ -1,6 +1,6 @@
 <template>
   <LoadingScreen v-if="showLoading" />
-  <BackupProgressPopup :visible="showBackupProgress" />
+  <BackupProgressPopup :visible="showProgress" :type="progressType" />
   <div class="app">
     <Header
       :onBeforeOpenSettings="() => loadPostExecScript()"
@@ -146,7 +146,8 @@ const {
   postExecScript,
   activeCommandId,
   rootAccessConfirmedRef,
-  showBackupProgress,
+  showProgress,
+  progressType,
   statusDotClass,
   appendConsole,
   withCommandGuard,
@@ -216,7 +217,8 @@ const { copyConsole, clearConsole, initFeatureModules } = useFeatures(
   updateStatus,
   refreshStatus,
   consoleApi,
-  showBackupProgress,
+  showProgress,
+  progressType,
 );
 
 watch(

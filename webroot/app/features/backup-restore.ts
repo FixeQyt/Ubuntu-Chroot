@@ -1,7 +1,7 @@
 import { DEFAULT_BACKUP_DIR } from "../composables/constants";
-import { createApp } from "vue";
+import { createApp, nextTick } from "vue";
 import FilePickerPopup from "../components/FilePickerPopup.vue"; // Ignore, it works (Why the fu"k it shows that there's an error)
-import { CommandResult } from "@/composables/useNativeCmd";
+import type { CommandResult } from "@/composables/useNativeCmd";
 
 export type BackupRestoreDeps = {
   appendConsole: (text: string, cls?: string) => void;
@@ -73,6 +73,8 @@ export type BackupRestoreDeps = {
 
   activeCommandId?: { value: string | null };
   rootAccessConfirmed?: { value: boolean };
+  showProgress?: { value: boolean };
+  progressType?: { value: "backup" | "restore" | null };
 };
 
 let deps: BackupRestoreDeps | null = null;
@@ -167,7 +169,9 @@ export async function backupChroot() {
 
     d.appendConsole(`Backup path selected: ${backupPath}`, "info");
 
-    d.showBackupProgress.value = true;
+    if (d.showProgress) d.showProgress.value = true;
+    if (d.progressType) d.progressType.value = "backup";
+
     d.closeSettingsPopup?.();
     await new Promise((r) =>
       setTimeout(r, d.ANIMATION_DELAYS?.POPUP_CLOSE_LONG ?? 400),
@@ -198,7 +202,6 @@ export async function backupChroot() {
       : null;
 
     d.appendConsole(`Starting backup to: ${backupPath}`, "info");
-    d.showBackupProgress.value = true;
     const cmdStr = `sh ${d.PATH_CHROOT_SH} backup --webui "${backupPath}"`;
 
     try {
@@ -260,7 +263,8 @@ export async function backupChroot() {
     d.disableAllActions?.(false);
     d.disableSettingsPopup?.(false, true);
   } finally {
-    d.showBackupProgress.value = false;
+    if (d.showProgress) d.showProgress.value = false;
+    if (d.progressType) d.progressType.value = null;
   }
 }
 
@@ -306,25 +310,8 @@ export async function restoreChroot() {
 
     if (!backupPath) return;
 
-    const confirmFn = d.showConfirmDialog;
-
-    let confirmed: boolean;
-    try {
-      confirmed = await confirmFn(
-        "Restore Chroot Environment",
-        `⚠️ WARNING: This will permanently delete your current chroot environment and replace it with the backup!\n\nAll current data in the chroot will be lost.\n\nBackup file: ${backupPath}\n\nThis action cannot be undone. Continue?`,
-        "Restore",
-        "Cancel",
-      );
-    } catch (err) {
-      d.appendConsole(
-        `Confirmation dialog error: ${(err as Error)?.message || String(err)}`,
-        "err",
-      );
-      return;
-    }
-
-    if (!confirmed) return;
+    if (d.showProgress) d.showProgress.value = true;
+    if (d.progressType) d.progressType.value = "restore";
 
     d.closeSettingsPopup?.();
     await new Promise((r) =>
@@ -413,6 +400,9 @@ export async function restoreChroot() {
     d.appendConsole(`Restore aborted: ${String(err?.message || err)}`, "warn");
     d.disableAllActions?.(false);
     d.disableSettingsPopup?.(false, true);
+  } finally {
+    if (d.showProgress) d.showProgress.value = false;
+    if (d.progressType) d.progressType.value = null;
   }
 }
 
