@@ -27,6 +27,7 @@ export function useFeatures(
   updateStatus: (state: string) => void,
   refreshStatus: () => Promise<void>,
   consoleApi: ReturnType<typeof useConsole>,
+  showBackupProgress: { value: boolean },
 ) {
   const cmd = useNativeCmd();
 
@@ -269,6 +270,7 @@ export function useFeatures(
         sparseMigrated: sparseMigrated,
         updateStatus: updateStatus,
         refreshStatus: refreshStatus,
+        showBackupProgress: showBackupProgress,
       };
 
       try {

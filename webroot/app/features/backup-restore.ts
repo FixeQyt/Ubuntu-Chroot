@@ -128,6 +128,8 @@ export async function backupChroot() {
   if (!deps) return;
   const d = deps;
 
+  d.appendConsole("Backup initiated", "info");
+
   // Prevent concurrent backups via the active command check
   if (d.activeCommandId && d.activeCommandId.value) {
     d.appendConsole(
@@ -158,28 +160,14 @@ export async function backupChroot() {
       backupPath = `${defaultDir}/${defaultFilename}`;
     }
 
-    if (!backupPath) return;
-
-    const confirm = d.showConfirmDialog;
-
-    let ok: boolean;
-    try {
-      ok = await confirm(
-        "Backup Chroot Environment",
-        `This will create a compressed backup of your chroot environment.\n\nThe chroot will be stopped during backup if it's currently running.\n\nBackup location: ${backupPath}\n\nContinue?`,
-        "Backup",
-        "Cancel",
-      );
-    } catch (err) {
-      d.appendConsole(
-        `Confirmation dialog error: ${(err as Error)?.message || String(err)}`,
-        "err",
-      );
+    if (!backupPath) {
+      d.appendConsole("Backup cancelled: no path selected", "warn");
       return;
     }
 
-    if (!ok) return;
+    d.appendConsole(`Backup path selected: ${backupPath}`, "info");
 
+    d.showBackupProgress.value = true;
     d.closeSettingsPopup?.();
     await new Promise((r) =>
       setTimeout(r, d.ANIMATION_DELAYS?.POPUP_CLOSE_LONG ?? 400),
@@ -209,82 +197,43 @@ export async function backupChroot() {
         )
       : null;
 
+    d.appendConsole(`Starting backup to: ${backupPath}`, "info");
+    d.showBackupProgress.value = true;
     const cmdStr = `sh ${d.PATH_CHROOT_SH} backup --webui "${backupPath}"`;
 
-    if (d.executeCommandWithProgress) {
-      const commandId = d.executeCommandWithProgress({
-        cmd: cmdStr,
-        progress: progress
-          ? {
-              progressLine: progress.progressLine,
-              progressInterval: progress.interval,
-            }
-          : null,
-        onSuccess: (result) => {
-          d.appendConsole("✓ Backup completed successfully", "success");
-          d.appendConsole(`Saved to: ${backupPath}`, "info");
-          d.appendConsole("━━━ Backup Complete ━━━", "success");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(false);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
-          );
-        },
-        onError: (result) => {
-          d.appendConsole("✗ Backup failed", "err");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(false);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
-          );
-        },
-        onComplete: () => {},
-        useValue: true,
-        activeCommandIdRef: d.activeCommandId ?? undefined,
-      });
+    try {
+      const pendingOutput: string[] = [];
+      const flushOutput = () => {
+        if (pendingOutput.length > 0) {
+          pendingOutput.forEach((line) => console.log(line));
+          pendingOutput.length = 0;
+        }
+      };
+      const throttledFlush = () => {
+        flushOutput();
+        setTimeout(throttledFlush, 100);
+      };
+      throttledFlush();
 
-      if (!commandId) {
+      const result = await d.runCommandAsyncPromise?.(cmdStr, {
+        onOutput: (line) => pendingOutput.push(line),
+      });
+      flushOutput(); // Final flush
+      if (progress) d.ProgressIndicator?.remove(progress);
+      if (result?.success) {
+        d.appendConsole(`✓ Backup completed successfully`, "success");
+        d.appendConsole(`Saved to: ${backupPath}`, "info");
+        d.appendConsole("━━━ Backup Complete ━━━", "success");
+        d.updateModuleStatus?.();
         d.disableAllActions?.(false);
         d.disableSettingsPopup?.(false, true);
-      }
-    } else {
-      try {
-        const result = await d.runCommandAsyncPromise?.(cmdStr, {
-          onOutput: (line) => d.appendConsole(line),
-        });
-        if (progress) d.ProgressIndicator?.remove(progress);
-        if (result?.success) {
-          d.appendConsole(`✓ Backup completed successfully`, "success");
-          d.appendConsole(`Saved to: ${backupPath}`, "info");
-          d.appendConsole("━━━ Backup Complete ━━━", "success");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(false);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
-          );
-        } else {
-          d.appendConsole(
-            `✗ Backup failed: ${result?.error || "Unknown error"}`,
-            "err",
-          );
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(false);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
-          );
-        }
-      } catch (err: any) {
-        if (progress) d.ProgressIndicator?.remove(progress);
+        setTimeout(
+          () => d.refreshStatus?.(),
+          d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
+        );
+      } else {
         d.appendConsole(
-          `✗ Backup failed: ${String(err?.message || err)}`,
+          `✗ Backup failed: ${result?.error || "Unknown error"}`,
           "err",
         );
         d.updateModuleStatus?.();
@@ -295,11 +244,23 @@ export async function backupChroot() {
           d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
         );
       }
+    } catch (err: any) {
+      if (progress) d.ProgressIndicator?.remove(progress);
+      d.appendConsole(`✗ Backup failed: ${String(err?.message || err)}`, "err");
+      d.updateModuleStatus?.();
+      d.disableAllActions?.(false);
+      d.disableSettingsPopup?.(false, true);
+      setTimeout(
+        () => d.refreshStatus?.(),
+        d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500,
+      );
     }
   } catch (err: any) {
     d.appendConsole(`Backup aborted: ${String(err?.message || err)}`, "warn");
     d.disableAllActions?.(false);
     d.disableSettingsPopup?.(false, true);
+  } finally {
+    d.showBackupProgress.value = false;
   }
 }
 
@@ -396,77 +357,38 @@ export async function restoreChroot() {
 
     const cmdStr = `sh ${d.PATH_CHROOT_SH} restore --webui "${backupPath}"`;
 
-    if (d.executeCommandWithProgress) {
-      const commandId = d.executeCommandWithProgress({
-        cmd: cmdStr,
-        progress: progress
-          ? {
-              progressLine: progress.progressLine,
-              progressInterval: progress.interval,
-            }
-          : null,
-        onSuccess: (r) => {
-          d.appendConsole("✓ Restore completed successfully", "success");
-          d.appendConsole("The chroot environment has been restored", "info");
-          d.appendConsole("━━━ Restore Complete ━━━", "success");
-          d.updateStatus?.("stopped");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(true);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
-          );
-        },
-        onError: (r) => {
-          d.appendConsole("✗ Restore failed", "err");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(false);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
-          );
-        },
-        onComplete: () => {},
-        useValue: true,
-        activeCommandIdRef: d.activeCommandId ?? undefined,
-      });
-
-      if (!commandId) {
-        d.disableAllActions?.(false);
-        d.disableSettingsPopup?.(false, true);
-      }
-    } else {
-      try {
-        const result = await d.runCommandAsyncPromise?.(cmdStr, {
-          onOutput: (line) => d.appendConsole(line),
-        });
-        if (progress) d.ProgressIndicator?.remove?.(progress ?? null);
-        if (result?.success) {
-          d.appendConsole("✓ Restore completed successfully", "success");
-          d.appendConsole("The chroot environment has been restored", "info");
-          d.appendConsole("━━━ Restore Complete ━━━", "success");
-          d.updateStatus?.("stopped");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(true);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
-          );
-        } else {
-          d.appendConsole("✗ Restore failed", "err");
-          d.updateModuleStatus?.();
-          d.disableAllActions?.(false);
-          d.disableSettingsPopup?.(false, true);
-          setTimeout(
-            () => d.refreshStatus?.(),
-            (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
-          );
+    try {
+      const pendingOutput: string[] = [];
+      const flushOutput = () => {
+        if (pendingOutput.length > 0) {
+          pendingOutput.forEach((line) => console.log(line));
+          pendingOutput.length = 0;
         }
-      } catch (err: any) {
-        if (progress) d.ProgressIndicator?.remove?.(progress ?? null);
+      };
+      const throttledFlush = () => {
+        flushOutput();
+        setTimeout(throttledFlush, 100);
+      };
+      throttledFlush();
+
+      const result = await d.runCommandAsyncPromise?.(cmdStr, {
+        onOutput: (line) => pendingOutput.push(line),
+      });
+      flushOutput(); // Final flush
+      if (progress) d.ProgressIndicator?.remove?.(progress ?? null);
+      if (result?.success) {
+        d.appendConsole("✓ Restore completed successfully", "success");
+        d.appendConsole("The chroot environment has been restored", "info");
+        d.appendConsole("━━━ Restore Complete ━━━", "success");
+        d.updateStatus?.("stopped");
+        d.updateModuleStatus?.();
+        d.disableAllActions?.(true);
+        d.disableSettingsPopup?.(false, true);
+        setTimeout(
+          () => d.refreshStatus?.(),
+          (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
+        );
+      } else {
         d.appendConsole("✗ Restore failed", "err");
         d.updateModuleStatus?.();
         d.disableAllActions?.(false);
@@ -476,6 +398,16 @@ export async function restoreChroot() {
           (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
         );
       }
+    } catch (err: any) {
+      if (progress) d.ProgressIndicator?.remove?.(progress ?? null);
+      d.appendConsole("✗ Restore failed", "err");
+      d.updateModuleStatus?.();
+      d.disableAllActions?.(false);
+      d.disableSettingsPopup?.(false, true);
+      setTimeout(
+        () => d.refreshStatus?.(),
+        (d.ANIMATION_DELAYS?.STATUS_REFRESH ?? 500) * 2,
+      );
     }
   } catch (err: any) {
     d.appendConsole(`Restore aborted: ${String(err?.message || err)}`, "warn");

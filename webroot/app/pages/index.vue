@@ -1,5 +1,6 @@
 <template>
   <LoadingScreen v-if="showLoading" />
+  <BackupProgressPopup :visible="showBackupProgress" />
   <div class="app">
     <Header
       :onBeforeOpenSettings="() => loadPostExecScript()"
@@ -112,6 +113,7 @@ import HotspotPopup from "@/components/HotspotPopup.vue";
 import ForwardNatPopup from "@/components/ForwardNatPopup.vue";
 import Footer from "@/components/Footer.vue";
 import LoadingScreen from "@/components/LoadingScreen.vue";
+import BackupProgressPopup from "@/components/BackupProgressPopup.vue";
 import HotspotFeature from "@/features/hotspot";
 import ForwardNatFeature from "@/features/forward-nat";
 import BackupRestoreFeature from "@/features/backup-restore";
@@ -144,6 +146,7 @@ const {
   postExecScript,
   activeCommandId,
   rootAccessConfirmedRef,
+  showBackupProgress,
   statusDotClass,
   appendConsole,
   withCommandGuard,
@@ -213,6 +216,7 @@ const { copyConsole, clearConsole, initFeatureModules } = useFeatures(
   updateStatus,
   refreshStatus,
   consoleApi,
+  showBackupProgress,
 );
 
 watch(

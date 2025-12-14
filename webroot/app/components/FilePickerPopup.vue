@@ -81,6 +81,11 @@ const cancel = () => {
 };
 
 const select = () => {
+  // Use defaults if empty
+  if (!path.value) path.value = props.defaultPath || "";
+  if (!props.forRestore && !filename.value)
+    filename.value = props.defaultFilename || "";
+
   let selectedPath = "";
   if (!props.forRestore) {
     if (path.value && filename.value) {
