@@ -147,7 +147,7 @@ export function useNativeCmd() {
   ): Promise<string> {
     const bridge = (window as any).cmdExec;
     if (!bridge || typeof bridge.execute !== "function") {
-      throw new Error("No command bridge available");
+      return "";
     }
 
     const asRoot = options?.asRoot !== undefined ? options.asRoot : true;
