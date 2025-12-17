@@ -302,17 +302,6 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
     }
 
     await withCommandGuard(action, async () => {
-      updateStatus(
-        action === "start"
-          ? "starting"
-          : action === "stop"
-            ? "stopping"
-            : "restarting",
-      );
-
-      await nextTick();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
       const actionText =
         action === "start"
           ? "Starting chroot"
@@ -324,6 +313,17 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
         "dots",
         consoleRef.value || document.getElementById("console"),
       );
+
+      updateStatus(
+        action === "start"
+          ? "starting"
+          : action === "stop"
+            ? "stopping"
+            : "restarting",
+      );
+
+      await nextTick();
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       consoleApi
         .scrollToBottom({ behavior: "smooth", waitMs: 400 })
