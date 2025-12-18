@@ -1,3 +1,4 @@
+import { nextTick } from "vue";
 import useConsole from "@/composables/useConsole";
 import BackupRestoreFeature from "@/features/backup-restore";
 import UninstallFeature from "@/features/uninstall";
@@ -14,9 +15,10 @@ export function useSettings(consoleApi: ReturnType<typeof useConsole>) {
     // loadPostExecScript is handled in useChroot
   }
 
-  function closeSettingsPopup() {
+  async function closeSettingsPopup() {
     const el = document.getElementById("settings-popup");
     if (el) el.classList.remove("active");
+    await nextTick();
   }
 
   function openSparseSettingsPopup() {
