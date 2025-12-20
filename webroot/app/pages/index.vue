@@ -2,7 +2,7 @@
   <LoadingScreen v-if="showLoading" />
   <NotFound v-if="showNotFound" @retry="handleRetry" />
   <BackupProgressPopup :visible="showProgress" :type="progressType" />
-  <div class="app">
+  <div v-if="!showLoading && !showNotFound" class="app">
     <Header
       :onBeforeOpenSettings="() => loadPostExecScript()"
       @openForwardNatPopup="openForwardNatPopup"
