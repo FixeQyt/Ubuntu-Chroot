@@ -3,6 +3,9 @@ import type { CommandResult } from "@/composables/useNativeCmd";
 export type UninstallDeps = {
   activeCommandId?: { value: string | null };
   rootAccessConfirmed?: { value: boolean };
+  showProgress?: { value: boolean };
+  progressTitle?: { value: string };
+  progressMessage?: { value: string };
   appendConsole: (text: string, cls?: string) => void;
   showConfirmDialog?: (
     title: string,
@@ -72,10 +75,10 @@ export function init(d: UninstallDeps) {
 }
 
 export async function uninstallChroot() {
-  try {
-    if (!deps) return;
-    const d = deps;
+  if (!deps) return;
+  const d = deps;
 
+  try {
     // Guard: don't run if a command is already active
     if (d.activeCommandId && d.activeCommandId.value) {
       d.appendConsole(
@@ -90,6 +93,12 @@ export async function uninstallChroot() {
       "Are you sure you want to uninstall the chroot environment?\n\nThis will permanently delete all data in the chroot and cannot be undone.",
     );
     const confirmed = true;
+
+    if (d.showProgress) d.showProgress.value = true;
+    if (d.progressTitle) d.progressTitle.value = "Uninstall in Progress";
+    if (d.progressMessage)
+      d.progressMessage.value =
+        "Please wait while the chroot environment is being uninstalled...";
 
     d.closeSettingsPopup?.();
     await new Promise((r) =>
@@ -251,6 +260,10 @@ export async function uninstallChroot() {
         "err",
       );
     }
+  } finally {
+    if (d.showProgress) d.showProgress.value = false;
+    if (d.progressTitle) d.progressTitle.value = "";
+    if (d.progressMessage) d.progressMessage.value = "";
   }
 }
 
