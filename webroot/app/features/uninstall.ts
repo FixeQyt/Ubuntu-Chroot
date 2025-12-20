@@ -1,4 +1,4 @@
-import { CommandResult } from "@/composables/useNativeCmd";
+import type { CommandResult } from "@/composables/useNativeCmd";
 
 export type UninstallDeps = {
   activeCommandId?: { value: string | null };
