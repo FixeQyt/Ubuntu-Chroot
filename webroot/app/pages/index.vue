@@ -1,5 +1,6 @@
 <template>
   <LoadingScreen v-if="showLoading" />
+  <NotFound v-if="showNotFound" @retry="handleRetry" />
   <BackupProgressPopup :visible="showProgress" :type="progressType" />
   <div class="app">
     <Header
@@ -125,6 +126,7 @@ import UpdateConfirmPopup from "@/components/UpdateConfirmPopup.vue";
 import Footer from "@/components/Footer.vue";
 import LoadingScreen from "@/components/LoadingScreen.vue";
 import BackupProgressPopup from "@/components/BackupProgressPopup.vue";
+import NotFound from "@/components/NotFound.vue";
 import HotspotFeature from "@/features/hotspot";
 import ForwardNatFeature from "@/features/forward-nat";
 import BackupRestoreFeature from "@/features/backup-restore";
@@ -136,11 +138,12 @@ import { useHotspot } from "@/composables/useHotspot";
 import { useForwardNat } from "@/composables/useForwardNat";
 import { useSettings } from "@/composables/useSettings";
 import { useFeatures } from "@/composables/useFeatures";
-import { ROOTFS_DIR } from "@/composables/constants";
+import { ROOTFS_DIR, PATH_CHROOT_SH } from "@/composables/constants";
 
 const cmd = useNativeCmd();
 const consoleApi = useConsole();
 const showLoading = ref(true);
+const showNotFound = ref(false);
 const globalDisabled = computed(() => !!activeCommandId.value);
 
 const {
@@ -297,12 +300,13 @@ watch(runAtBoot, (val) => {
   writeBootFile(val);
 });
 
-onMounted(async () => {
-  // Check if ROOTFS_DIR exists
-  const check = await cmd.runCommandSync(`ls -ld ${ROOTFS_DIR} 2>&1`);
+const performCheck = async () => {
+  // Check if chroot exists
+  const check = await cmd.runCommandSync(`sh ${PATH_CHROOT_SH} check_existing`);
   const result = String(check || "").trim();
-  if (result.includes("No such file or directory")) {
-    navigateTo("/not-found");
+  if (result !== "exists") {
+    showNotFound.value = true;
+    showLoading.value = false;
     return;
   }
 
@@ -352,6 +356,16 @@ onMounted(async () => {
   }, 10000);
 
   showLoading.value = false;
+};
+
+const handleRetry = () => {
+  showNotFound.value = false;
+  showLoading.value = true;
+  performCheck();
+};
+
+onMounted(async () => {
+  await performCheck();
 });
 </script>
 

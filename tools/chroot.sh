@@ -791,6 +791,14 @@ list_users() {
     run_in_chroot "awk -F: '\$3 >= 1000 && \$3 < 65534 {print \$1}' /etc/passwd 2>/dev/null | tr '\n' ',' | sed 's/,$//'"
 }
 
+check_existing() {
+    if [ -d "$CHROOT_PATH" ] || [ -f "$ROOTFS_IMG" ]; then
+        echo "exists"
+    else
+        echo "not_exists"
+    fi
+}
+
 run_command() {
     if [ "$NO_AUTO_START" -eq 1 ] && ! is_chroot_running; then
         error "Chroot is not running and auto-start is disabled"
@@ -1175,7 +1183,7 @@ WEBUI_MODE=0
 
 for arg in "$@"; do
     case "$arg" in
-        start|stop|restart|status|raw-status|umount|fstrim|backup|restore|uninstall|list-users|run|resize)
+        start|stop|restart|status|raw-status|umount|fstrim|backup|restore|uninstall|list-users|run|resize|check_existing)
             COMMAND="$arg" ;;
         --no-shell) NO_SHELL_FLAG=1 ;;
         --webui) WEBUI_MODE=1 ;;
@@ -1241,5 +1249,6 @@ case "$COMMAND" in
             exit 1
         fi
         resize_sparse "$RESIZE_SIZE" ;;
+    check_existing) check_existing ;;
     *) error "Invalid command: $COMMAND"; usage ;;
 esac
