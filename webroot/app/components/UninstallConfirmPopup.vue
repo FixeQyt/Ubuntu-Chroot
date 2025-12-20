@@ -3,23 +3,26 @@
     <div class="popup-content">
       <div class="popup-header">
         <h3>Confirm Uninstall</h3>
-        <button class="close-btn" @click="$emit('cancel')" title="Close">×</button>
+        <button class="close-btn" @click="$emit('cancel')" title="Close">
+          ×
+        </button>
       </div>
       <div class="popup-body">
         <div class="warning-banner">
           <div class="warning-content">
-            <svg width="20" height="20" viewbox="0 0 16 16" class="" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8.429 2.746a.5.5 0 0 0-.858 0L1.58 12.743a.5.5 0 0 0 .429.757h11.984a.5.5 0 0 0 .43-.757L8.428 2.746Zm-2.144-.77C7.06.68 8.939.68 9.715 1.975l5.993 9.996c.799 1.333-.161 3.028-1.716 3.028H2.008C.453 15-.507 13.305.292 11.972l5.993-9.997ZM9 11.5a1 1 0 1 1-2 0a1 1 0 0 1 2 0Zm-.25-5.75a.75.75 0 0 0-1.5 0v3a.75.75 0 0 0 1.5 0v-3Z"/>
-            </svg>
+            <Icon name="warning" size="20" fill="currentColor" />
             <div class="warning-text">
-              <strong>Warning:</strong> This action cannot be undone. All data in the chroot environment will be permanently deleted.
+              <strong>Warning:</strong> This action cannot be undone. All data
+              in the chroot environment will be permanently deleted.
             </div>
           </div>
         </div>
         <p>Are you sure you want to uninstall the Ubuntu chroot environment?</p>
         <div class="script-actions">
           <button class="btn outline" @click="$emit('cancel')">Cancel</button>
-          <button class="btn danger" @click="$emit('confirm')">Uninstall</button>
+          <button class="btn danger" @click="$emit('confirm')">
+            Uninstall
+          </button>
         </div>
       </div>
     </div>
@@ -39,8 +42,8 @@ defineEmits<{
 }>();
 
 const closeOnOverlay = (event: Event) => {
-  if ((event.target as HTMLElement).classList.contains('popup-overlay')) {
-    emit('cancel');
+  if ((event.target as HTMLElement).classList.contains("popup-overlay")) {
+    emit("cancel");
   }
 };
 </script>
@@ -157,7 +160,11 @@ const closeOnOverlay = (event: Event) => {
   color: #fff;
   cursor: pointer;
   padding: 8px 12px;
-  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .btn.outline {
