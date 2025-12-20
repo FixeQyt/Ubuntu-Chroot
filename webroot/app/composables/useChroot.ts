@@ -84,16 +84,21 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
   async function fetchUsers(silent = false) {
     if (!cmd.isAvailable.value) return;
     try {
-      const out = await cmd.runCommandSync(`${PATH_CHROOT_SH} list-users`);
+      const out = await cmd.runCommandSync(
+        `${PATH_CHROOT_SH} list-users --no-auto-start`,
+      );
       const list = String(out || "").trim();
       users.value = list ? list.split(",").filter(Boolean) : [];
       const saved = Storage.get("chroot_selected_user");
       if (saved && users.value.includes(saved)) selectedUser.value = saved;
-      if (!silent)
-        appendConsole(
-          `Found ${users.value.length} regular user(s) in chroot`,
-          "info",
-        );
+      if (!silent) {
+        const count = users.value.length;
+        const message =
+          count === 0
+            ? "No users found (chroot may not be running)"
+            : `Found ${count} regular user(s) in chroot`;
+        appendConsole(message, "info");
+      }
     } catch (e: unknown) {
       if (!silent)
         appendConsole(
@@ -427,6 +432,13 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
   }
 
   async function writeDozeOffFile() {
+    if (!cmd.isAvailable.value) {
+      appendConsole(
+        "Cannot set Android optimizations: command bridge unavailable",
+        "warn",
+      );
+      return;
+    }
     try {
       const result = await cmd.runCommandAsyncPromise(
         `mkdir -p ${CHROOT_DIR} && echo ${androidOptimize.value ? 1 : 0} > ${DOZE_OFF_FILE}`,

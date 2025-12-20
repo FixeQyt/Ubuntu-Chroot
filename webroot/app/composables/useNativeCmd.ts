@@ -32,7 +32,8 @@ export function useNativeCmd() {
       typeof window !== "undefined" &&
       !!(window as any).cmdExec &&
       (typeof (window as any).cmdExec.execute === "function" ||
-        typeof (window as any).cmdExec.executeAsync === "function")
+        typeof (window as any).cmdExec.executeAsync === "function") &&
+      execMethod.value !== "none"
     );
   });
 
@@ -42,11 +43,16 @@ export function useNativeCmd() {
     const INTERVAL_MS = 250;
     const interval = setInterval(() => {
       attempts++;
+      const bridge = (window as any).cmdExec;
+      const execMethodCheck = bridge
+        ? (bridge.execMethod as ExecMethod) || "none"
+        : "none";
       const ok =
         typeof window !== "undefined" &&
-        !!(window as any).cmdExec &&
-        (typeof (window as any).cmdExec.execute === "function" ||
-          typeof (window as any).cmdExec.executeAsync === "function");
+        !!bridge &&
+        (typeof bridge.execute === "function" ||
+          typeof bridge.executeAsync === "function") &&
+        execMethodCheck !== "none";
       _available.value = ok;
       if (ok || attempts >= MAX_ATTEMPTS) {
         clearInterval(interval);
@@ -115,8 +121,11 @@ export function useNativeCmd() {
       asRoot?: boolean;
       debug?: boolean;
       onOutput?: (line: string) => void;
+      timeoutMs?: number;
     },
   ): Promise<CommandResult> {
+    const timeoutMs = options?.timeoutMs ?? 10000; // Default 10s timeout
+
     return new Promise((resolve) => {
       const callbacks: AsyncCallbacks = {
         onOutput: (line) => options?.onOutput?.(line),
@@ -137,7 +146,25 @@ export function useNativeCmd() {
 
       if (!commandId) {
         resolve({ success: false, error: "Failed to start command" });
+        return;
       }
+
+      // Set timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        resolve({ success: false, error: "Command execution timed out" });
+      }, timeoutMs);
+
+      // Clear timeout when command completes
+      const originalOnComplete = callbacks.onComplete;
+      const originalOnError = callbacks.onError;
+      callbacks.onComplete = (result) => {
+        clearTimeout(timeoutId);
+        originalOnComplete?.(result);
+      };
+      callbacks.onError = (err) => {
+        clearTimeout(timeoutId);
+        originalOnError?.(err);
+      };
     });
   }
 

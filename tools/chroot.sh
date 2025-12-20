@@ -22,6 +22,7 @@ HOLDER_PID_FILE="${BASE_CHROOT_DIR}/holder.pid"
 SILENT=0
 SKIP_POST_EXEC=0
 CHROOT_SETUP_IN_PROGRESS=0
+NO_AUTO_START=0
 
 # --- Debug mode ---
 LOGGING_ENABLED=${LOGGING_ENABLED:-0}
@@ -71,6 +72,7 @@ usage() {
     echo "  [user]        Username to log in as (default: root)."
     echo "  --no-shell    Setup chroot without entering an interactive shell."
     echo "  --skip-post-exec  Skip running post-execution scripts."
+    echo "  --no-auto-start  Prevent automatic chroot startup for commands."
     echo "  -s            Silent mode (suppress informational output)."
     exit 1
 }
@@ -139,7 +141,7 @@ run_in_chroot() {
     local command="$*"
 
     # Ensure chroot is started if not running - but prevent recursion during setup
-    if [ "$CHROOT_SETUP_IN_PROGRESS" -eq 0 ]; then
+    if [ "$CHROOT_SETUP_IN_PROGRESS" -eq 0 ] && [ "$NO_AUTO_START" -eq 0 ]; then
         if ! is_chroot_running; then
             log "Starting chroot for command execution..."
             start_chroot > /dev/null 2>&1 || {
@@ -782,10 +784,18 @@ show_raw_status() {
 }
 
 list_users() {
+    if [ "$NO_AUTO_START" -eq 1 ] && ! is_chroot_running; then
+        echo ""
+        return
+    fi
     run_in_chroot "awk -F: '\$3 >= 1000 && \$3 < 65534 {print \$1}' /etc/passwd 2>/dev/null | tr '\n' ',' | sed 's/,$//'"
 }
 
 run_command() {
+    if [ "$NO_AUTO_START" -eq 1 ] && ! is_chroot_running; then
+        error "Chroot is not running and auto-start is disabled"
+        return 1
+    fi
     local command="$*"
     run_in_chroot "$command"
 }
@@ -1170,6 +1180,7 @@ for arg in "$@"; do
         --no-shell) NO_SHELL_FLAG=1 ;;
         --webui) WEBUI_MODE=1 ;;
         --skip-post-exec) SKIP_POST_EXEC=1 ;;
+        --no-auto-start) NO_AUTO_START=1 ;;
         -s) SILENT=1 ;;
         -h|--help) usage ;;
         -*) echo "Unknown option: $arg"; usage ;;
