@@ -1,11 +1,90 @@
 <template>
   <LoadingScreen v-if="showLoading" />
-  <NotFound v-if="showNotFound" @retry="handleRetry" />
+  <div v-if="showNotFound" class="not-found-container">
+    <Header
+      :disableNatAndHotspot="true"
+      :onBeforeOpenSettings="() => loadPostExecScript()"
+      @openSettingsPopup="openSettingsPopup"
+    />
+    <NotFound @retry="handleRetry" />
+  </div>
   <ProgressPopup
     :visible="showProgress"
     :title="progressTitle"
     :message="progressMessage"
   />
+  <SettingsPopup
+    :postExecScript="postExecScript"
+    :debugMode="debugMode"
+    :androidOptimize="androidOptimize"
+    :disabled="globalDisabled"
+    :chrootNotFound="showNotFound"
+    @close="closeSettingsPopup"
+    @update:postExecScript="postExecScript = $event"
+    @update:debugMode="debugMode = $event"
+    @update:androidOptimize="androidOptimize = $event"
+    @savePostExecScript="savePostExecScript"
+    @clearPostExecScript="clearPostExecScript"
+    @updateChroot="() => updateChroot(closeSettingsPopup)"
+    @backupChroot="backupChroot"
+    @restoreChroot="restoreChroot"
+    @uninstallChroot="handleUninstallConfirm"
+  />
+
+  <SparseSettingsPopup
+    :disabled="globalDisabled"
+    @close="closeSparseSettingsPopup"
+    @trimSparseImage="trimSparseImage"
+    @resizeSparseImage="resizeSparseImage"
+  />
+
+  <HotspotPopup
+    :hotspotWarningVisible="hotspotWarningVisible"
+    :hotspotIfaces="hotspotIfaces"
+    :hotspotLoading="hotspotIfacesLoading"
+    :hotspotIfaceError="hotspotIfaceError"
+    :hotspotIface="hotspotIface"
+    :hotspotSsid="hotspotSsid"
+    :hotspotPassword="hotspotPassword"
+    :hotspotBand="hotspotBand"
+    :hotspotChannel="hotspotChannel"
+    :hotspotChannels="hotspotChannels"
+    :disabled="globalDisabled"
+    @close="closeHotspotPopup"
+    @dismissHotspotWarning="dismissHotspotWarning"
+    @update:hotspotIface="hotspotIface = $event"
+    @update:hotspotSsid="hotspotSsid = $event"
+    @update:hotspotPassword="hotspotPassword = $event"
+    @update:hotspotBand="hotspotBand = $event"
+    @update:hotspotChannel="hotspotChannel = $event"
+    @toggleHotspotPassword="toggleHotspotPassword"
+    @startHotspot="startHotspot"
+    @stopHotspot="stopHotspot"
+    @refreshHotspotIfaces="refreshHotspotIfaces"
+  />
+
+  <ForwardNatPopup
+    :forwardNatIfaces="forwardNatIfaces"
+    :forwardNatIface="forwardNatIface"
+    :disabled="globalDisabled"
+    @close="closeForwardNatPopup"
+    @update:forwardNatIface="forwardNatIface = $event"
+    @startForwarding="startForwarding"
+    @stopForwarding="stopForwarding"
+  />
+
+  <UpdateConfirmPopup
+    :visible="showUpdateConfirm"
+    @confirm="confirmUpdate(closeSettingsPopup)"
+    @cancel="showUpdateConfirm = false"
+  />
+
+  <UninstallConfirmPopup
+    :visible="showUninstallConfirm"
+    @confirm="confirmUninstall"
+    @cancel="showUninstallConfirm = false"
+  />
+
   <div v-if="!showLoading && !showNotFound" class="app">
     <Header
       :onBeforeOpenSettings="() => loadPostExecScript()"
@@ -42,77 +121,6 @@
         @refreshStatusManual="refreshStatusManual"
       />
     </main>
-
-    <SettingsPopup
-      :postExecScript="postExecScript"
-      :debugMode="debugMode"
-      :androidOptimize="androidOptimize"
-      :disabled="globalDisabled"
-      @close="closeSettingsPopup"
-      @update:postExecScript="postExecScript = $event"
-      @update:debugMode="debugMode = $event"
-      @update:androidOptimize="androidOptimize = $event"
-      @savePostExecScript="savePostExecScript"
-      @clearPostExecScript="clearPostExecScript"
-      @updateChroot="() => updateChroot(closeSettingsPopup)"
-      @backupChroot="backupChroot"
-      @restoreChroot="restoreChroot"
-      @uninstallChroot="handleUninstallConfirm"
-    />
-
-    <SparseSettingsPopup
-      :disabled="globalDisabled"
-      @close="closeSparseSettingsPopup"
-      @trimSparseImage="trimSparseImage"
-      @resizeSparseImage="resizeSparseImage"
-    />
-
-    <HotspotPopup
-      :hotspotWarningVisible="hotspotWarningVisible"
-      :hotspotIfaces="hotspotIfaces"
-      :hotspotLoading="hotspotIfacesLoading"
-      :hotspotIfaceError="hotspotIfaceError"
-      :hotspotIface="hotspotIface"
-      :hotspotSsid="hotspotSsid"
-      :hotspotPassword="hotspotPassword"
-      :hotspotBand="hotspotBand"
-      :hotspotChannel="hotspotChannel"
-      :hotspotChannels="hotspotChannels"
-      :disabled="globalDisabled"
-      @close="closeHotspotPopup"
-      @dismissHotspotWarning="dismissHotspotWarning"
-      @update:hotspotIface="hotspotIface = $event"
-      @update:hotspotSsid="hotspotSsid = $event"
-      @update:hotspotPassword="hotspotPassword = $event"
-      @update:hotspotBand="hotspotBand = $event"
-      @update:hotspotChannel="hotspotChannel = $event"
-      @toggleHotspotPassword="toggleHotspotPassword"
-      @startHotspot="startHotspot"
-      @stopHotspot="stopHotspot"
-      @refreshHotspotIfaces="refreshHotspotIfaces"
-    />
-
-    <ForwardNatPopup
-      :forwardNatIfaces="forwardNatIfaces"
-      :forwardNatIface="forwardNatIface"
-      :disabled="globalDisabled"
-      @close="closeForwardNatPopup"
-      @update:forwardNatIface="forwardNatIface = $event"
-      @startForwarding="startForwarding"
-      @stopForwarding="stopForwarding"
-    />
-
-    <UpdateConfirmPopup
-      :visible="showUpdateConfirm"
-      @confirm="confirmUpdate(closeSettingsPopup)"
-      @cancel="showUpdateConfirm = false"
-    />
-
-    <UninstallConfirmPopup
-      :visible="showUninstallConfirm"
-      @confirm="confirmUninstall"
-      @cancel="showUninstallConfirm = false"
-    />
 
     <Footer />
   </div>
@@ -315,6 +323,8 @@ watch(runAtBoot, (val) => {
 });
 
 const performCheck = async () => {
+  initFeatureModules();
+
   // Check if chroot exists
   const check = await cmd.runCommandSync(`sh ${PATH_CHROOT_SH} check_existing`);
   const result = String(check || "").trim();
@@ -344,7 +354,6 @@ const performCheck = async () => {
     readDozeOffFile(true).catch(() => {}),
   ]);
 
-  initFeatureModules();
   setTimeout(() => {
     try {
       if (
@@ -392,4 +401,8 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.not-found-container {
+  min-height: 100vh;
+}
+</style>

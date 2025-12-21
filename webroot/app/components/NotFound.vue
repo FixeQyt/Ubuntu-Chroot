@@ -32,7 +32,8 @@ const retry = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 44px - var(--top-inset));
+  margin-top: calc(44px + var(--top-inset));
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   color: #ffffff;
   animation: fadeIn 0.5s ease-out;

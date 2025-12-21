@@ -20,7 +20,7 @@
             id="post-exec-script"
             class="script-editor"
             :value="postExecScript"
-            :readonly="disabled"
+            :readonly="disabled || chrootNotFound"
             @input="$emit('update:postExecScript', $event.target.value)"
             placeholder="echo 'Chroot started successfully'\n# Add your commands here"
             rows="6"
@@ -29,7 +29,7 @@
             <button
               id="save-script"
               class="btn small"
-              :disabled="disabled"
+              :disabled="disabled || chrootNotFound"
               @click="$emit('savePostExecScript')"
             >
               Save
@@ -37,7 +37,7 @@
             <button
               id="clear-script"
               class="btn outline small"
-              :disabled="disabled"
+              :disabled="disabled || chrootNotFound"
               @click="$emit('clearPostExecScript')"
             >
               Clear
@@ -53,7 +53,7 @@
           <button
             id="update-btn"
             class="btn"
-            :disabled="disabled"
+            :disabled="disabled || chrootNotFound"
             @click="$emit('updateChroot')"
           >
             Update Chroot
@@ -70,7 +70,7 @@
             <button
               id="backup-btn"
               class="btn"
-              :disabled="disabled"
+              :disabled="disabled || chrootNotFound"
               @click="$emit('backupChroot')"
             >
               Backup Chroot
@@ -92,7 +92,7 @@
           <button
             id="uninstall-btn"
             class="btn danger"
-            :disabled="disabled"
+            :disabled="disabled || chrootNotFound"
             @click="$emit('uninstallChroot')"
           >
             Uninstall Chroot
@@ -127,7 +127,7 @@
                   id="debug-toggle"
                   type="checkbox"
                   :checked="debugMode"
-                  :disabled="disabled"
+                  :disabled="disabled || chrootNotFound"
                   @change="
                     $emit(
                       'update:debugMode',
@@ -156,7 +156,7 @@
                   id="android-optimize-toggle"
                   type="checkbox"
                   :checked="androidOptimize"
-                  :disabled="disabled"
+                  :disabled="disabled || chrootNotFound"
                   @change="
                     $emit(
                       'update:androidOptimize',
@@ -183,9 +183,12 @@ interface Props {
   debugMode: boolean;
   androidOptimize: boolean;
   disabled: boolean;
+  chrootNotFound?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  chrootNotFound: false,
+});
 
 const popupRef = ref<HTMLElement | null>(null);
 
