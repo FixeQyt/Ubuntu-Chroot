@@ -22,7 +22,7 @@
             :value="postExecScript"
             :readonly="disabled || chrootNotFound"
             @input="$emit('update:postExecScript', $event.target.value)"
-            placeholder="echo 'Chroot started successfully'\n# Add your commands here"
+            placeholder="# Add your commands here"
             rows="6"
           ></textarea>
           <div class="script-actions">
