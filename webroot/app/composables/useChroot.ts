@@ -185,45 +185,54 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
       return;
     }
 
-    try {
-      const out = await cmd.runCommandSync(`${PATH_CHROOT_SH} raw-status`);
-      const s = String(out || "")
-        .trim()
-        .toUpperCase();
+    const maxRetries = 3;
+    let lastError: unknown;
 
-      if (s === "RUNNING") {
-        console.log("Setting statusText to running");
-        statusText.value = "running";
-        startDisabled.value = true;
-        stopDisabled.value = false;
-        restartDisabled.value = false;
-        userSelectDisabled.value = false;
-        copyLoginDisabled.value = false;
-      } else if (s === "STOPPED") {
-        console.log("Setting statusText to stopped");
-        statusText.value = "stopped";
-        startDisabled.value = false;
-        stopDisabled.value = true;
-        restartDisabled.value = true;
-        userSelectDisabled.value = true;
-        copyLoginDisabled.value = true;
-      } else {
-        statusText.value = "unknown";
-        startDisabled.value = true;
-        stopDisabled.value = true;
-        restartDisabled.value = true;
-        userSelectDisabled.value = true;
-        copyLoginDisabled.value = true;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const out = await cmd.runCommandSync(`${PATH_CHROOT_SH} raw-status`);
+        const s = String(out || "")
+          .trim()
+          .toUpperCase();
+
+        if (s === "RUNNING") {
+          statusText.value = "running";
+          startDisabled.value = true;
+          stopDisabled.value = false;
+          restartDisabled.value = false;
+          userSelectDisabled.value = false;
+          copyLoginDisabled.value = false;
+          return;
+        } else if (s === "STOPPED") {
+          statusText.value = "stopped";
+          startDisabled.value = false;
+          stopDisabled.value = true;
+          restartDisabled.value = true;
+          userSelectDisabled.value = true;
+          copyLoginDisabled.value = true;
+          return;
+        } else {
+          lastError = new Error(`Unknown status: ${s}`);
+        }
+      } catch (e: unknown) {
+        lastError = e;
       }
-    } catch (e: unknown) {
-      statusText.value = "unknown";
-      startDisabled.value = true;
-      stopDisabled.value = true;
-      restartDisabled.value = true;
-      userSelectDisabled.value = true;
-      copyLoginDisabled.value = true;
-      appendConsole(`Failed to get status: ${String(e)}`, "warn");
+
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
     }
+
+    statusText.value = "unknown";
+    startDisabled.value = true;
+    stopDisabled.value = true;
+    restartDisabled.value = true;
+    userSelectDisabled.value = true;
+    copyLoginDisabled.value = true;
+    appendConsole(
+      `Failed to get status after ${maxRetries} attempts: ${String(lastError)}`,
+      "warn",
+    );
   }
 
   /**
@@ -348,6 +357,7 @@ export function useChroot(consoleApi: ReturnType<typeof useConsole>) {
         });
         if (result.success) {
           appendConsole(`✓ ${action} completed successfully`, "success");
+          await new Promise((resolve) => setTimeout(resolve, 500));
           await refreshStatus();
         } else {
           appendConsole(
